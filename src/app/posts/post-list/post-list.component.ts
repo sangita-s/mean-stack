@@ -23,7 +23,9 @@ export class PostListComponent implements OnInit, OnDestroy{
   }
 
   ngOnInit(): void {
-      this.posts = this.postsService.getPosts();
+      // this.posts = this.postsService.getPosts();
+      // Just trigger http request. Listen to resp
+      this.postsService.getPosts();
       this.postsSub = this.postsService.getPostUpdateListener()
         .subscribe((inputPosts: Post[]) => { //this never tears down if we go to another screen. Memory leak
           this.posts = inputPosts;
