@@ -1,7 +1,32 @@
 const express = require('express');
 const Post = require('../models/post')
 const router = express.Router();
+const multer = require('multer');
 
+// file extension mime type
+const MIME_TYPE_MAP = {
+    'image/png': 'png',
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg'
+};
+
+const storage = multer.diskStorage({
+    //executed when multler tries to save a file
+    destination: (req, file, cb) => {
+        const isValid = MIME_TYPE_MAP[file.mimetype]; //79
+        console.log('Mimetype is ' + isValid);
+        let error = new Error("Invalid mime type"); //79
+        if (isValid) {
+            error = null;
+        }
+        cb(error, "backend/images");
+    },
+    filename: (req, file, cb) => {
+        const name = file.originalname.toLowerCase().split(' ').join('-');
+        const ext = MIME_TYPE_MAP[file.mimetype];
+        cb(null, name + '-' + Date.now() + '.' + ext);
+    }
+});
 // Order is important !!
 // GET /api/posts/getpost/:id: Fetch a single post by ID.
 // PUT /api/posts/editpost/:id: Edit an existing post.
@@ -21,12 +46,20 @@ router.get('/getpost/:id', (req, res, next) => {
     });
 });
 
-router.put('/editpost/:id', (req, res, next) => {
+router.put('/editpost/:id', multer({ storage: storage }).single("image"), (req, res, next) => {
+    // console.log(req.file); // undefined for string
+    let imagePath = req.body.imagePath;;
+    if (req.file) {
+        const url = req.protocol + "://" + req.get("host");
+        imagePath = url + "/images/" + req.file.filename;
+    }
     const post = new Post({
         _id: req.params.id,
         title: req.body.title,
-        content: req.body.content
+        content: req.body.content,
+        imagePath: imagePath
     });
+    console.log("Updating post with : "+post);
     Post.updateOne({ _id: req.params.id }, post).then(result => {
         console.log(result);
         res.status(200).json({ message: "Update successful" });
@@ -50,12 +83,15 @@ router.delete('/deletepost/:id', (req, res, next) => {
         });
 });
 
-router.post('/createpost', (req, res, next) => {
+//multer tries to find a single file of type image in body
+router.post('/createpost', multer({ storage: storage }).single("image"), (req, res, next) => {
     // const post = req.body; 
     //Mongoose Post object
+    const url = req.protocol + '://' + req.get('host');
     const post = new Post({
         title: req.body.title,
-        content: req.body.content
+        content: req.body.content,
+        imagePath: url + "/images/" + req.file.filename
     });
     console.log(post);
     //Mongoose provides 'save'
@@ -64,13 +100,22 @@ router.post('/createpost', (req, res, next) => {
         //Everything ok, new resource created
         res.status(201).json({
             message: 'Post added successfully',
-            postId: createdPost._id
+            // postId: createdPost._id
+            post: {
+                // title: createdPost.title,
+                // content: createdPost.content,
+                // imagePath: createdPost.imagePath
+                //Shortform + id overwrite
+                ...createdPost,
+                id: createdPost._id
+            }
         });
     });;
 });
 
 //Collection named 'posts' for 'Post'
-router.use('', (req, res, next) => {
+// router.use('', (req, res, next) => {
+router.get("", (req, res, next) => {
     // res.send('Hello from Express');
     // const posts = [
     //     {
@@ -85,12 +130,32 @@ router.use('', (req, res, next) => {
     //     }
     // ];
     // res.json(posts);
-    Post.find()
+    console.log('Req query : '+req.query);
+    const pageSize = +req.query.pagesize; //+ to convert to number
+    const currentPage = +req.query.page;
+    const postQuery = Post.find(); //Added 89
+    let fetchedPosts; 
+    if(pageSize && currentPage){
+        postQuery
+            .skip(pageSize * (currentPage - 1))
+            .limit(pageSize);
+    }
+    // Post.find()
+    postQuery
         .then(documents => {
-            console.log('Finding posts' + documents)
+            // console.log('Finding posts' + documents)
+            // res.status(200).json({
+            //     message: 'Posts fetched successfully',
+            //     posts: documents
+            // });
+            fetchedPosts = documents;
+            //To get count for paginator
+            return Post.countDocuments();
+        }).then(count => {
             res.status(200).json({
                 message: 'Posts fetched successfully',
-                posts: documents
+                posts: fetchedPosts,
+                maxPosts: count
             });
         });
     // res.status(200).json({

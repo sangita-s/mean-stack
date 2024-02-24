@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const bodyParser = require('body-parser');
 const app = express();
 const mongoose = require('mongoose');
@@ -23,6 +24,8 @@ mongoose.connect("mongodb+srv://shoppingacc2422:ausGtpWJeBNWAT8t@mean-stack-clus
 app.use(bodyParser.json());
 //Parse url encoded data
 app.use(bodyParser.urlencoded({ extended: false }));
+//Allow access to images folder
+app.use("/images", express.static(path.join("backend/images")));
 
 // For CORS
 app.use((req, res, next) => {
