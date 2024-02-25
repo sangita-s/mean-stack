@@ -4,8 +4,14 @@ const bodyParser = require('body-parser');
 const app = express();
 const mongoose = require('mongoose');
 
+//npm install cors
+const cors = require('cors');
+
+app.use(cors());
+
 // const Post = require('./models/post')
 const postsRoutes = require('./routes/posts');
+const userRoutes = require('./routes/user');
 
 mongoose.connect("mongodb+srv://shoppingacc2422:ausGtpWJeBNWAT8t@mean-stack-cluster.olzi89f.mongodb.net/mean-stack?retryWrites=true&w=majority")
     .then(() => {
@@ -14,11 +20,6 @@ mongoose.connect("mongodb+srv://shoppingacc2422:ausGtpWJeBNWAT8t@mean-stack-clus
     .catch(() => {
         console.log('Connection failed!')
     });
-
-// app.use((req, res, next) => {
-//     console.log('First Middleware');
-//     next();
-// });
 
 //Parsing body data from post requests
 app.use(bodyParser.json());
@@ -31,11 +32,12 @@ app.use("/images", express.static(path.join("backend/images")));
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers',
-        'Origin, X-Requested-With, Content-Type, Accept');
+        'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PATCH, PUT, DELETE');
     next();
 });
 
 app.use("/api/posts", postsRoutes);
+app.use("/api/user", userRoutes);
 
 module.exports = app;
