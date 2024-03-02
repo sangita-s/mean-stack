@@ -58,7 +58,9 @@ router.post('/createpost', checkAuth, multer({ storage: storage }).single("image
     const post = new Post({
         title: req.body.title,
         content: req.body.content,
-        imagePath: url + "/images/" + req.file.filename
+        imagePath: url + "/images/" + req.file.filename,
+        //SInce checkAuth called above, all info will be passed to middleware here
+        creator: req.userData.userId
     });
     console.log(post);
     //Mongoose provides 'save'
@@ -86,12 +88,18 @@ router.put('/editpost/:id', checkAuth, multer({ storage: storage }).single("imag
         _id: req.params.id,
         title: req.body.title,
         content: req.body.content,
-        imagePath: imagePath
+        imagePath: imagePath,
+        creator: req.userData.userId
     });
-    console.log("Updating post with : "+post);
-    Post.updateOne({ _id: req.params.id }, post).then(result => {
-        console.log(result);
-        res.status(200).json({ message: "Update successful" });
+    // console.log("Updating post with : "+post);
+    Post.updateOne({ _id: req.params.id, creator: req.userData.userId }, post).then(result => {
+        // console.log(result);
+        if (result.modifiedCount > 0) {
+            res.status(200).json({ message: "Update successful" });
+        } else {
+            res.status(401).json({ message: "Not authorized to edit" });
+        }
+
     });
 });
 
@@ -116,8 +124,8 @@ router.get("", (req, res, next) => {
     const pageSize = +req.query.pagesize; //+ to convert to number
     const currentPage = +req.query.page;
     const postQuery = Post.find(); //Added 89
-    let fetchedPosts; 
-    if(pageSize && currentPage){
+    let fetchedPosts;
+    if (pageSize && currentPage) {
         postQuery
             .skip(pageSize * (currentPage - 1))
             .limit(pageSize);
@@ -137,10 +145,10 @@ router.get("", (req, res, next) => {
 
 router.delete('/deletepost/:id', checkAuth, (req, res, next) => {
     console.log("App.js: Going to delete from mongo" + req.params.id);
-    Post.deleteOne({ _id: req.params.id })
+    Post.deleteOne({ _id: req.params.id, creator: req.userData.userId})
         .then(result => {
+            console.log(result);
             if (result.deletedCount === 1) {
-                console.log("Result from deleteOne" + result);
                 res.status(200).json({ message: 'Post deleted.' });
             } else {
                 res.status(404).json({ message: 'Post not found.' });
@@ -153,3 +161,10 @@ router.delete('/deletepost/:id', checkAuth, (req, res, next) => {
 });
 
 module.exports = router;
+
+// Also use result.deletedCount 
+//instead of result.n (in the deleteOne method).
+
+// Also, for lecture 135, 
+//in the updateOne method, 
+//you should use result.matchedCount instead of result.n.
