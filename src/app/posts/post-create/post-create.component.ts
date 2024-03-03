@@ -1,16 +1,18 @@
-import { Component, EventEmitter, Output, OnInit } from '@angular/core';
+import { Component, EventEmitter, Output, OnInit, OnDestroy } from '@angular/core';
 import { NgForm, FormGroup, FormControl, Validators } from '@angular/forms';
 import { ActivatedRoute, ParamMap } from '@angular/router';
 
 import { Post } from '../post.model';
 import { PostsService } from '../posts.service';
 import { mimeType } from './mime-type.validator';
+import { Subscription } from 'rxjs';
+import { AuthService } from 'src/app/auth/auth.service';
 @Component({
   selector: 'app-post-create',
   templateUrl: './post-create.component.html',
   styleUrls: ['./post-create.component.css'],
 })
-export class PostCreateComponent implements OnInit {
+export class PostCreateComponent implements OnInit, OnDestroy {
   enteredTitle = '';
   enteredContent = '';
   // @Output() postCreated = new EventEmitter<Post>();
@@ -20,13 +22,18 @@ export class PostCreateComponent implements OnInit {
   imagePreview: string; //76
   private mode = 'create';
   private postId: string;
+  private authStatusSub: Subscription; //128
 
   constructor(
     public postsService: PostsService,
-    public route: ActivatedRoute
+    public route: ActivatedRoute,
+    private authService: AuthService // 128
   ) {}
 
   ngOnInit() {
+    this.authStatusSub = this.authService
+      .getAuthStatusListener()
+      .subscribe(authStatus => (this.isLoading = false)); //128 - every time there is a change
     this.form = new FormGroup({
       title: new FormControl(null, {
         validators: [Validators.required, Validators.minLength(3)],
@@ -52,12 +59,12 @@ export class PostCreateComponent implements OnInit {
             title: postdata.title,
             content: postdata.content,
             imagePath: postdata.imagePath,
-            creator: postdata.creator
+            creator: postdata.creator,
           };
           this.form.setValue({
             title: this.post.title,
             content: this.post.content,
-            image: this.post.imagePath //84
+            image: this.post.imagePath, //84
           }); //74
         }); //68 , no need to unsub
       } else {
@@ -109,4 +116,9 @@ export class PostCreateComponent implements OnInit {
     // form.resetForm();
     this.form.reset(); //74
   }
+
+  ngOnDestroy(): void {
+    this.authStatusSub.unsubscribe();
+  }
+
 }

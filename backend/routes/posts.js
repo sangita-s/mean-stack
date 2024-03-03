@@ -46,6 +46,10 @@ router.get('/getpost/:id', (req, res, next) => {
         } else {
             res.status(404).json({ message: 'Post not found' });
         }
+    }).catch(error => {
+        res.status(500).json({
+            message: "Fetching post failed"
+        })
     });
 });
 
@@ -74,7 +78,12 @@ router.post('/createpost', checkAuth, multer({ storage: storage }).single("image
                 id: createdPost._id
             }
         });
-    });;
+    })
+        .catch(error => {
+            res.status(500).json({
+                message: "Creating a post failed"
+            });
+        });
 });
 
 router.put('/editpost/:id', checkAuth, multer({ storage: storage }).single("image"), (req, res, next) => {
@@ -100,6 +109,11 @@ router.put('/editpost/:id', checkAuth, multer({ storage: storage }).single("imag
             res.status(401).json({ message: "Not authorized to edit" });
         }
 
+    })
+    .catch(error => {
+        res.status(500).json({
+            message: "COuldnt update post..."
+        });
     });
 });
 
@@ -140,12 +154,17 @@ router.get("", (req, res, next) => {
                 posts: fetchedPosts,
                 maxPosts: count
             });
+        })
+        .catch(error => {
+            res.status(500).json({
+                message: "Fetching post failed"
+            })
         });
 });
 
 router.delete('/deletepost/:id', checkAuth, (req, res, next) => {
     console.log("App.js: Going to delete from mongo" + req.params.id);
-    Post.deleteOne({ _id: req.params.id, creator: req.userData.userId})
+    Post.deleteOne({ _id: req.params.id, creator: req.userData.userId })
         .then(result => {
             console.log(result);
             if (result.deletedCount === 1) {
@@ -157,6 +176,10 @@ router.delete('/deletepost/:id', checkAuth, (req, res, next) => {
         .catch(error => {
             console.error("Error deleting post:", error);
             res.status(500).json({ message: 'Failed to delete post.' });
+        }).catch(error => {
+            res.status(500).json({
+                message: "Deleting post failed"
+            })
         });
 });
 

@@ -71,6 +71,8 @@ export class PostListComponent implements OnInit, OnDestroy {
     // console.log('Delete button clicked. Id: ' + postId);
     this.postsService.deletePost(postId).subscribe(() => {
       this.postsService.getPosts(this.postsPerPage, this.currentPage);
+    }, () => {
+      this.isLoading = false;
     });
   }
 
