@@ -13,7 +13,7 @@ app.use(cors());
 const postsRoutes = require('./routes/posts');
 const userRoutes = require('./routes/user');
 
-mongoose.connect("mongodb+srv://shoppingacc2422:ausGtpWJeBNWAT8t@mean-stack-cluster.olzi89f.mongodb.net/mean-stack?retryWrites=true&w=majority")
+mongoose.connect("mongodb+srv://shoppingacc2422:"+process.env.MONGO_ATLAS_PWD+"@mean-stack-cluster.olzi89f.mongodb.net/mean-stack?retryWrites=true&w=majority")
     .then(() => {
         console.log('Connected to database!')
     })
